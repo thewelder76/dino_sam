@@ -4,10 +4,9 @@ from PIL import Image
 from torchvision import transforms
 from groundingdino.util.inference import load_model, predict
 from segment_anything import SamPredictor, sam_model_registry
-import cv2
 
 def load_models():
-    print("\U0001F527 Loading Grounding DINO and SAM models...")
+    print("🔧 Loading Grounding DINO and SAM models...")
 
     dino_config = "./models/GroundingDINO_SwinT_OGC.py"
     dino_checkpoint = "./models/groundingdino_swint_ogc.pth"
@@ -23,20 +22,9 @@ def load_models():
 
     return dino_model, sam_predictor
 
-def preprocess_image(image_bytes):
-    image = Image.open(image_bytes).convert("RGB")
-    transform = transforms.Compose([
-        transforms.Resize((800, 800)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225]),
-    ])
-    return transform(image)
-
 def run_detection(image_np, prompt_str, dino_model, sam_predictor):
     image = Image.fromarray(image_np).convert("RGB")
 
-    # Preprocess for DINO
     transform = transforms.Compose([
         transforms.Resize((800, 800)),
         transforms.ToTensor(),
@@ -44,12 +32,12 @@ def run_detection(image_np, prompt_str, dino_model, sam_predictor):
                              std=[0.229, 0.224, 0.225]),
     ])  
 
-    image_tensor = transform(image).unsqueeze(0)  # Add batch dim
+    image_tensor = transform(image).unsqueeze(0)
     image_tensor = image_tensor.to(next(dino_model.parameters()).device)
 
     boxes, logits, phrases = predict(
         model=dino_model,
-        image=[image_tensor],
+        image=image_tensor,  # ✅ Do NOT wrap in list
         caption=prompt_str,
         box_threshold=0.3,
         text_threshold=0.25

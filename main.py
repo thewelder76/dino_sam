@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
 import numpy as np
 from io import BytesIO
@@ -7,7 +8,15 @@ from inference import run_detection, load_models
 
 app = FastAPI()
 
-# Load once at startup
+# Optional CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 gdino_model, sam_predictor = load_models()
 
 @app.post("/tag-image")
@@ -19,10 +28,11 @@ async def tag_image(
     image = Image.open(BytesIO(image_bytes)).convert("RGB")
     image_np = np.array(image)
 
-    detections = run_detection(image_np, prompt, gdino_model, sam_predictor)
+    boxes, logits, phrases = run_detection(image_np, prompt, gdino_model, sam_predictor)
+
     return {
-        "boxes": detections[0].tolist(),
-        "logits": detections[1].tolist(),
-        "phrases": detections[2],
+        "boxes": boxes.tolist(),
+        "logits": logits.tolist(),
+        "phrases": phrases,
     }
 
