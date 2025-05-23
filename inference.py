@@ -5,13 +5,26 @@ import cv2
 from groundingdino.util.inference import load_model, predict
 from segment_anything import SamPredictor, sam_model_registry
 
+from groundingdino.util.inference import load_model
+
 def load_models():
     print("🔧 Loading Grounding DINO and SAM models...")
-    dino_model = load_model()
-    sam = sam_model_registry["vit_h"](checkpoint="models/sam_vit_h.pth")
-    sam.to("cuda" if torch.cuda.is_available() else "cpu")
-    predictor = SamPredictor(sam)
-    return dino_model, predictor
+
+    model_config_path = "models/GroundingDINO_SwinT_OGC.py"
+    model_checkpoint_path = "models/groundingdino_swint_ogc.pth"
+
+    dino_model = load_model(
+        model_config_path=model_config_path,
+        model_checkpoint_path=model_checkpoint_path
+    )
+
+    # load SAM predictor (you probably already have this part)
+    from segment_anything import SamPredictor, sam_model_registry
+    sam = sam_model_registry["vit_h"]("models/sam_vit_h.pth")
+    sam_predictor = SamPredictor(sam)
+
+    return dino_model, sam_predictor
+
 
 def run_detection(image_np, prompt, dino_model, sam_predictor):
     from torchvision import transforms
