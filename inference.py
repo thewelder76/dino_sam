@@ -25,6 +25,7 @@ def load_models():
 def run_detection(image_np, prompt_str, dino_model, sam_predictor):
     image = Image.fromarray(image_np).convert("RGB")
 
+    # Preprocess image for GroundingDINO
     transform = transforms.Compose([
         transforms.Resize((800, 800)),
         transforms.ToTensor(),
@@ -32,12 +33,15 @@ def run_detection(image_np, prompt_str, dino_model, sam_predictor):
                              std=[0.229, 0.224, 0.225]),
     ])  
 
-    image_tensor = transform(image).unsqueeze(0)
+    image_tensor = transform(image).unsqueeze(0)  # Add batch dim
     image_tensor = image_tensor.to(next(dino_model.parameters()).device)
+
+    # Remove batch dim before calling predict()
+    image_tensor = image_tensor.squeeze(0)  # Shape: (C, H, W)
 
     boxes, logits, phrases = predict(
         model=dino_model,
-        image=image_tensor,  # ✅ Do NOT wrap in list
+        image=image_tensor,
         caption=prompt_str,
         box_threshold=0.3,
         text_threshold=0.25

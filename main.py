@@ -8,7 +8,7 @@ from inference import run_detection, load_models
 
 app = FastAPI()
 
-# Optional CORS middleware
+# Optional CORS for local testing or frontend use
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,6 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Load models once at startup
 gdino_model, sam_predictor = load_models()
 
 @app.post("/tag-image")
@@ -31,8 +32,8 @@ async def tag_image(
     boxes, logits, phrases = run_detection(image_np, prompt, gdino_model, sam_predictor)
 
     return {
-        "boxes": boxes.tolist(),
-        "logits": logits.tolist(),
-        "phrases": phrases,
+        "boxes": boxes.tolist() if boxes is not None else [],
+        "logits": logits.tolist() if logits is not None else [],
+        "phrases": phrases if phrases is not None else [],
     }
 
