@@ -24,6 +24,5 @@ RUN git clone https://github.com/facebookresearch/segment-anything.git /app/segm
 WORKDIR /workspace
 COPY . .
 
-# Default command
-CMD ["python", "main.py"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
