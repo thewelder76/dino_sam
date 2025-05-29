@@ -5,6 +5,7 @@ ENV CUDA_HOME=/usr/local/cuda
 ENV PATH=$CUDA_HOME/bin:$PATH
 ENV LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 ENV PYTHONUNBUFFERED=1
+ENV TRANSFORMERS_CACHE=/workspace/models/bert-base-uncased
 
 # Set working directory
 WORKDIR /workspace
