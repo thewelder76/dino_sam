@@ -1,30 +1,49 @@
-FROM pytorch/pytorch:2.2.2-cuda11.8-cudnn8-runtime
+FROM pytorch/pytorch:2.2.2-cuda11.8-cudnn8-devel
 
-ENV DEBIAN_FRONTEND=noninteractive
+# Environment
+ENV CUDA_HOME=/usr/local/cuda
+ENV PATH=$CUDA_HOME/bin:$PATH
+ENV LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+ENV PYTHONUNBUFFERED=1
 
-# System dependencies
+# Set working directory
+WORKDIR /workspace
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git curl libgl1 libglib2.0-0 ffmpeg build-essential \
+    git \
+    curl wget ca-certificates ffmpeg \
+    libgl1 libglib2.0-0 build-essential ninja-build python3-dev python3-pip \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Only install Python deps that don't include 'torch'
-COPY requirements.txt .
-RUN grep -v '^torch' requirements.txt > trimmed.txt \
- && pip install --upgrade pip && pip install -r trimmed.txt
+# --- Clone GroundingDINO ---
+RUN git clone https://github.com/IDEA-Research/GroundingDINO.git
+WORKDIR /workspace/GroundingDINO
 
-# Clone and install Grounding DINO (with native extension)
-RUN git clone https://github.com/IDEA-Research/GroundingDINO.git /app/GroundingDINO \
- && pip install -e /app/GroundingDINO \
- && cd /app/GroundingDINO \
- && python setup.py build_ext --inplace
+# Install GroundingDINO Python dependencies
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -e .
 
-# Clone and install Segment Anything
-RUN git clone https://github.com/facebookresearch/segment-anything.git /app/segment-anything \
- && pip install -e /app/segment-anything
+# ✅ Build CUDA extension from correct location
+# This file is in the root of the repo, NOT under models/
+RUN TORCH_CUDA_ARCH_LIST="6.1" python setup.py build_ext --inplace
 
-# Copy your app code
+# --- Clone Segment Anything ---
 WORKDIR /workspace
-COPY . .
+RUN git clone https://github.com/facebookresearch/segment-anything.git
+ENV PYTHONPATH="${PYTHONPATH}:/workspace/segment-anything"
 
+# --- Copy and install app code ---
+WORKDIR /workspace
+COPY requirements.txt main.py inference.py ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# --- Optional: Copy model weights here ---
+# COPY models/ ./models/
+
+# --- Start server ---
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
