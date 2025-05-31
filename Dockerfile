@@ -39,11 +39,10 @@ ENV PYTHONPATH="${PYTHONPATH}:/workspace/segment-anything"
 
 # --- Copy and install app code ---
 WORKDIR /workspace
-COPY requirements.txt main.py inference.py ./
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# --- Optional: Copy model weights here ---
-# COPY models/ ./models/
+COPY main.py inference.py ./
 
 # --- Start server ---
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

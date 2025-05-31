@@ -30,10 +30,10 @@ async def tag_image(
     image_np = np.array(image)
 
     boxes, logits, phrases = run_detection(image_np, prompt, gdino_model, sam_predictor)
-
-    return {
+    res={
         "boxes": boxes.tolist() if boxes is not None else [],
         "logits": logits.tolist() if logits is not None else [],
         "phrases": phrases if phrases is not None else [],
     }
-
+    print(res)
+    return res
